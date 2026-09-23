@@ -2071,7 +2071,7 @@ function setupControls(){
     for(const t of e.changedTouches){
       if(t.identifier===joyTouchId){
         let dx=t.clientX-joyCenter.x, dy=t.clientY-joyCenter.y;
-        const maxR=40, dist=Math.min(maxR, Math.hypot(dx,dy)), ang=Math.atan2(dy,dx);
+        const maxR=22, dist=Math.min(maxR, Math.hypot(dx,dy)), ang=Math.atan2(dy,dx);
         dx=Math.cos(ang)*dist; dy=Math.sin(ang)*dist;
         joyVec.x = dx/maxR; joyVec.y = dy/maxR;
         joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
