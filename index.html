@@ -15,7 +15,7 @@
   *{box-sizing:border-box; font-family:'Segoe UI',Tahoma,sans-serif;}
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;}
   #app{position:relative;width:100%;height:100vh;height:100dvh;overflow:hidden;}
-  #threeContainer{position:absolute;inset:0;}
+  #threeContainer{position:absolute;inset:0;touch-action:none;}
   #threeContainer canvas{display:block;width:100%;height:100%;}
 
   #crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -95,6 +95,7 @@
   #toastRoot{position:absolute; top:10px; right:10px; z-index:60; display:flex;
     flex-direction:column; gap:6px; align-items:flex-end; pointer-events:none;}
   .toast{background:#333;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;box-shadow:0 3px 8px var(--shadow);
+    max-width:min(240px,62vw);word-wrap:break-word;white-space:normal;
     animation:fadeToast 3.2s forwards;}
   @keyframes fadeToast{0%{opacity:0;transform:translateY(-8px);}10%{opacity:1;transform:translateY(0);}
     85%{opacity:1;}100%{opacity:0;}}
@@ -2056,6 +2057,9 @@ function setupControls(){
   }
 
   container.addEventListener('touchstart', e=>{
+    e.preventDefault(); // stop the browser's own pull-to-refresh/scroll/zoom gestures from
+                         // competing with our own touch handling — this is a full-screen game,
+                         // it should own every touch itself.
     if(state.uiBlocking) return;
     for(const t of e.changedTouches){
       if(joyTouchId===null && isInJoystickZone(t.clientX,t.clientY)){
@@ -2065,8 +2069,9 @@ function setupControls(){
         lookTouchId=t.identifier; lookStart={x:t.clientX,y:t.clientY}; lookLast={x:t.clientX,y:t.clientY}; lookMoved=false;
       }
     }
-  }, {passive:true});
+  }, {passive:false});
   container.addEventListener('touchmove', e=>{
+    e.preventDefault();
     if(state.uiBlocking) return;
     for(const t of e.changedTouches){
       if(t.identifier===joyTouchId){
@@ -2079,13 +2084,13 @@ function setupControls(){
         if(Math.hypot(t.clientX-lookStart.x, t.clientY-lookStart.y) > TAP_MOVE_THRESHOLD) lookMoved = true;
         if(!state.uiBlocking){
           const dx=t.clientX-lookLast.x, dy=t.clientY-lookLast.y;
-          camera.rotation.y -= dx*0.0042; camera.rotation.x -= dy*0.0042;
+          camera.rotation.y -= dx*0.0048; camera.rotation.x -= dy*0.0048;
           camera.rotation.x = clamp(camera.rotation.x,-1.3,1.3);
         }
         lookLast={x:t.clientX,y:t.clientY};
       }
     }
-  }, {passive:true});
+  }, {passive:false});
   function releaseJoyTouch(id){
     if(id===joyTouchId){ joyTouchId=null; joyVec.x=0; joyVec.y=0; joyKnob.style.transform='translate(0,0)'; }
   }
@@ -2114,7 +2119,10 @@ function updateMovement(delta){
   if(keys['KeyS']||keys['ArrowDown']) moveZ-=1;
   if(keys['KeyD']||keys['ArrowRight']) moveX+=1;
   if(keys['KeyA']||keys['ArrowLeft']) moveX-=1;
-  moveZ += -joyVec.y; moveX += joyVec.x;
+  // boost small joystick nudges so they produce a clearly-noticeable speed instead of a barely-visible
+  // creep — full keyboard input (always exactly ±1 per axis) is unaffected by this curve either way.
+  function curve(v){ return Math.sign(v) * Math.pow(Math.abs(v), 0.55); }
+  moveZ += -curve(joyVec.y); moveX += curve(joyVec.x);
   const len = Math.hypot(moveX,moveZ);
   if(len>0.001){
     const nx = moveX/Math.max(1,len), nz = moveZ/Math.max(1,len);
