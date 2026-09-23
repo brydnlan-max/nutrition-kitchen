@@ -1931,7 +1931,9 @@ function interactAtCrosshair(){
 }
 function interactAtScreenPoint(clientX, clientY){
   if(state.uiBlocking) return;
-  const ndc = { x:(clientX/window.innerWidth)*2-1, y:-(clientY/window.innerHeight)*2+1 };
+  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const ndc = { x:(clientX/vw)*2-1, y:-(clientY/vh)*2+1 };
   const obj = getInteractionTarget(ndc);
   interactWith(obj);
 }
@@ -2057,7 +2059,8 @@ function setupControls(){
     // fixed rectangular hit-zone anchored at the joystick's corner. A circle centered right on a
     // screen corner wastes most of its own area off-screen — a corner-anchored rectangle uses the
     // actual available space, so touches from any direction land inside it reliably.
-    return x < 230 && y > window.innerHeight-230;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    return x < 230 && y > vh-230;
   }
 
   container.addEventListener('touchstart', e=>{
