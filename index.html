@@ -2049,12 +2049,10 @@ function setupControls(){
   const TAP_MOVE_THRESHOLD = 14; // px of finger travel before a touch counts as a drag, not a tap
 
   function isInJoystickZone(x,y){
-    // fixed hit-zone anchored on the joystick's real on-screen spot, but with a generous
-    // radius well beyond the visible circle — forgiving of imprecise thumb placement
-    // without following the touch around the rest of the screen.
-    const r = joyBase.getBoundingClientRect();
-    const cx = r.left + r.width/2, cy = r.top + r.height/2;
-    return Math.hypot(x-cx, y-cy) < 110;
+    // fixed rectangular hit-zone anchored at the joystick's corner. A circle centered right on a
+    // screen corner wastes most of its own area off-screen — a corner-anchored rectangle uses the
+    // actual available space, so touches from any direction land inside it reliably.
+    return x < 230 && y > window.innerHeight-230;
   }
 
   container.addEventListener('touchstart', e=>{
