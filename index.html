@@ -2063,7 +2063,8 @@ function setupControls(){
     return x < 230 && y > vh-230;
   }
 
-  container.addEventListener('touchstart', e=>{
+  document.addEventListener('touchstart', e=>{
+    if(!container.contains(e.target)) return; // let popup buttons receive their own normal touch behavior
     e.preventDefault(); // stop the browser's own pull-to-refresh/scroll/zoom gestures from
                          // competing with our own touch handling — this is a full-screen game,
                          // it should own every touch itself.
@@ -2077,7 +2078,8 @@ function setupControls(){
       }
     }
   }, {passive:false});
-  container.addEventListener('touchmove', e=>{
+  document.addEventListener('touchmove', e=>{
+    if(!container.contains(e.target)) return;
     e.preventDefault();
     if(state.uiBlocking) return;
     // self-healing pass: iOS can occasionally fail to deliver a clean touchstart for a second
@@ -2115,10 +2117,10 @@ function setupControls(){
     lookTouchId=null;
     if(wasTap && !lookMoved) interactAtScreenPoint(lookLast.x, lookLast.y);
   }
-  container.addEventListener('touchend', e=>{
+  document.addEventListener('touchend', e=>{
     for(const t of e.changedTouches){ releaseJoyTouch(t.identifier); releaseLookTouch(t.identifier, true); }
   }, {passive:true});
-  container.addEventListener('touchcancel', e=>{
+  document.addEventListener('touchcancel', e=>{
     // iOS can interrupt an in-progress touch (system gestures, notifications, etc.) without a normal
     // touchend — without handling this, a joystick or look touch could get stuck until page reload.
     for(const t of e.changedTouches){ releaseJoyTouch(t.identifier); releaseLookTouch(t.identifier, false); }
