@@ -2063,34 +2063,44 @@ function setupControls(){
     return x < 230 && y > vh-230;
   }
 
+  // Rebuilds joystick/look role assignment from the browser's own live touch list on every event,
+  // instead of relying on carefully-tracked state that can drift out of sync if any individual
+  // touchstart/touchend gets missed or misordered (which iOS has real, documented quirks around
+  // when a second finger lands mid-gesture). Worst case with this approach: one frame of staleness,
+  // never a permanently stuck or misassigned touch.
+  function reconcileTouches(touches){
+    if(joyTouchId!==null && ![...touches].some(t=>t.identifier===joyTouchId)) releaseJoyTouch(joyTouchId);
+    if(lookTouchId!==null && ![...touches].some(t=>t.identifier===lookTouchId)) releaseLookTouch(lookTouchId, false);
+    for(const t of touches){
+      if(t.identifier===joyTouchId || t.identifier===lookTouchId) continue;
+      if(joyTouchId===null && isInJoystickZone(t.clientX,t.clientY)){
+        joyTouchId=t.identifier; joyCenter={x:t.clientX,y:t.clientY};
+      } else if(lookTouchId===null){
+        lookTouchId=t.identifier; lookStart={x:t.clientX,y:t.clientY}; lookLast={x:t.clientX,y:t.clientY}; lookMoved=false;
+      }
+    }
+  }
+  function releaseJoyTouch(id){
+    if(id===joyTouchId){ joyTouchId=null; joyVec.x=0; joyVec.y=0; joyKnob.style.transform='translate(0,0)'; }
+  }
+  function releaseLookTouch(id, wasTap){
+    if(id!==lookTouchId) return;
+    lookTouchId=null;
+    if(wasTap && !lookMoved) interactAtScreenPoint(lookLast.x, lookLast.y);
+  }
   document.addEventListener('touchstart', e=>{
     if(!container.contains(e.target)) return; // let popup buttons receive their own normal touch behavior
     e.preventDefault(); // stop the browser's own pull-to-refresh/scroll/zoom gestures from
                          // competing with our own touch handling — this is a full-screen game,
                          // it should own every touch itself.
     if(state.uiBlocking) return;
-    for(const t of e.changedTouches){
-      if(joyTouchId===null && isInJoystickZone(t.clientX,t.clientY)){
-        joyTouchId=t.identifier;
-        joyCenter = {x:t.clientX, y:t.clientY}; // drag origin = wherever the finger actually landed, not the ring's fixed center
-      } else if(lookTouchId===null){
-        lookTouchId=t.identifier; lookStart={x:t.clientX,y:t.clientY}; lookLast={x:t.clientX,y:t.clientY}; lookMoved=false;
-      }
-    }
+    reconcileTouches(e.touches);
   }, {passive:false});
   document.addEventListener('touchmove', e=>{
     if(!container.contains(e.target)) return;
     e.preventDefault();
     if(state.uiBlocking) return;
-    // self-healing pass: iOS can occasionally fail to deliver a clean touchstart for a second
-    // finger that lands while the first is already mid-drag. If any currently-active touch isn't
-    // tracked as either the joystick or the look touch, and it's sitting in the joystick zone with
-    // the joystick free, adopt it here instead of waiting on a touchstart that may never arrive.
-    for(const t of e.touches){
-      if(t.identifier!==joyTouchId && t.identifier!==lookTouchId && joyTouchId===null && isInJoystickZone(t.clientX,t.clientY)){
-        joyTouchId=t.identifier; joyCenter={x:t.clientX,y:t.clientY};
-      }
-    }
+    reconcileTouches(e.touches);
     for(const t of e.changedTouches){
       if(t.identifier===joyTouchId){
         let dx=t.clientX-joyCenter.x, dy=t.clientY-joyCenter.y;
@@ -2109,21 +2119,15 @@ function setupControls(){
       }
     }
   }, {passive:false});
-  function releaseJoyTouch(id){
-    if(id===joyTouchId){ joyTouchId=null; joyVec.x=0; joyVec.y=0; joyKnob.style.transform='translate(0,0)'; }
-  }
-  function releaseLookTouch(id, wasTap){
-    if(id!==lookTouchId) return;
-    lookTouchId=null;
-    if(wasTap && !lookMoved) interactAtScreenPoint(lookLast.x, lookLast.y);
-  }
   document.addEventListener('touchend', e=>{
     for(const t of e.changedTouches){ releaseJoyTouch(t.identifier); releaseLookTouch(t.identifier, true); }
+    reconcileTouches(e.touches);
   }, {passive:true});
   document.addEventListener('touchcancel', e=>{
     // iOS can interrupt an in-progress touch (system gestures, notifications, etc.) without a normal
     // touchend — without handling this, a joystick or look touch could get stuck until page reload.
     for(const t of e.changedTouches){ releaseJoyTouch(t.identifier); releaseLookTouch(t.identifier, false); }
+    reconcileTouches(e.touches);
   }, {passive:true});
   if(!isTouch){ joyBase.style.display='none'; }
 }
