@@ -28,9 +28,11 @@
     pointer-events:none;z-index:5;white-space:nowrap;display:none;max-width:80vw;text-align:center;}
 
   #joyBase{position:fixed;bottom:28px;left:28px;width:110px;height:110px;border-radius:50%;
-    background:rgba(255,255,255,.22);border:2px solid rgba(255,255,255,.4);z-index:6;touch-action:none;}
+    background:rgba(30,30,30,.32);border:3px solid rgba(255,255,255,.75);z-index:6;touch-action:none;
+    box-shadow:0 3px 10px rgba(0,0,0,.5);}
   #joyKnob{position:absolute;top:30px;left:30px;width:50px;height:50px;border-radius:50%;
-    background:rgba(255,255,255,.55);pointer-events:none;}
+    background:rgba(255,255,255,.85);border:2px solid rgba(30,30,30,.4);pointer-events:none;
+    box-shadow:0 2px 6px rgba(0,0,0,.4);}
 
   #heldItemHud{position:absolute;bottom:96px;right:38px;font-size:50px;z-index:6;display:none;
     pointer-events:none;filter:drop-shadow(0 4px 4px rgba(0,0,0,.45));}
@@ -1517,8 +1519,10 @@ function buildKitchen(){
 
   const floorCanvas=document.createElement('canvas'); floorCanvas.width=128; floorCanvas.height=128;
   const fctx=floorCanvas.getContext('2d');
-  fctx.fillStyle='#dfe7ea'; fctx.fillRect(0,0,128,128);
-  fctx.fillStyle='#cfd9dc'; fctx.fillRect(0,0,64,64); fctx.fillRect(64,64,64,64);
+  fctx.fillStyle='#c9a876'; fctx.fillRect(0,0,128,128);
+  fctx.fillStyle='#a3855c'; fctx.fillRect(0,0,64,64); fctx.fillRect(64,64,64,64);
+  fctx.strokeStyle='#8a6a45'; fctx.lineWidth=2;
+  fctx.strokeRect(1,1,62,62); fctx.strokeRect(65,1,62,62); fctx.strokeRect(1,65,62,62); fctx.strokeRect(65,65,62,62);
   const floorTex = new THREE.CanvasTexture(floorCanvas);
   floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(6,6);
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(18,18), new THREE.MeshStandardMaterial({map:floorTex}));
@@ -2076,7 +2080,7 @@ function setupControls(){
     for(const t of e.changedTouches){
       if(t.identifier===joyTouchId){
         let dx=t.clientX-joyCenter.x, dy=t.clientY-joyCenter.y;
-        const maxR=22, dist=Math.min(maxR, Math.hypot(dx,dy)), ang=Math.atan2(dy,dx);
+        const maxR=15, dist=Math.min(maxR, Math.hypot(dx,dy)), ang=Math.atan2(dy,dx);
         dx=Math.cos(ang)*dist; dy=Math.sin(ang)*dist;
         joyVec.x = dx/maxR; joyVec.y = dy/maxR;
         joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
@@ -2121,7 +2125,7 @@ function updateMovement(delta){
   if(keys['KeyA']||keys['ArrowLeft']) moveX-=1;
   // boost small joystick nudges so they produce a clearly-noticeable speed instead of a barely-visible
   // creep — full keyboard input (always exactly ±1 per axis) is unaffected by this curve either way.
-  function curve(v){ return Math.sign(v) * Math.pow(Math.abs(v), 0.55); }
+  function curve(v){ return Math.sign(v) * Math.pow(Math.abs(v), 0.4); }
   moveZ += -curve(joyVec.y); moveX += curve(joyVec.x);
   const len = Math.hypot(moveX,moveZ);
   if(len>0.001){
