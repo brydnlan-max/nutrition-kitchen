@@ -2080,6 +2080,15 @@ function setupControls(){
   container.addEventListener('touchmove', e=>{
     e.preventDefault();
     if(state.uiBlocking) return;
+    // self-healing pass: iOS can occasionally fail to deliver a clean touchstart for a second
+    // finger that lands while the first is already mid-drag. If any currently-active touch isn't
+    // tracked as either the joystick or the look touch, and it's sitting in the joystick zone with
+    // the joystick free, adopt it here instead of waiting on a touchstart that may never arrive.
+    for(const t of e.touches){
+      if(t.identifier!==joyTouchId && t.identifier!==lookTouchId && joyTouchId===null && isInJoystickZone(t.clientX,t.clientY)){
+        joyTouchId=t.identifier; joyCenter={x:t.clientX,y:t.clientY};
+      }
+    }
     for(const t of e.changedTouches){
       if(t.identifier===joyTouchId){
         let dx=t.clientX-joyCenter.x, dy=t.clientY-joyCenter.y;
