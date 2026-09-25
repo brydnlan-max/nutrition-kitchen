@@ -2089,7 +2089,7 @@ function setupControls(){
     if(wasTap && !lookMoved) interactAtScreenPoint(lookLast.x, lookLast.y);
   }
   document.addEventListener('touchstart', e=>{
-    if(!container.contains(e.target)) return; // let popup buttons receive their own normal touch behavior
+    if(e.target.closest && e.target.closest('.overlay')) return; // let popup buttons receive their own normal touch behavior
     e.preventDefault(); // stop the browser's own pull-to-refresh/scroll/zoom gestures from
                          // competing with our own touch handling — this is a full-screen game,
                          // it should own every touch itself.
@@ -2097,7 +2097,7 @@ function setupControls(){
     reconcileTouches(e.touches);
   }, {passive:false});
   document.addEventListener('touchmove', e=>{
-    if(!container.contains(e.target)) return;
+    if(e.target.closest && e.target.closest('.overlay')) return;
     e.preventDefault();
     if(state.uiBlocking) return;
     reconcileTouches(e.touches);
