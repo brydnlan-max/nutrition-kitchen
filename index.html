@@ -1,4 +1,4 @@
-=<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -13,7 +13,8 @@
     --panel:#fffaf2; --ink:#3a2a1e; --shadow:rgba(0,0,0,.35);
   }
   *{box-sizing:border-box; font-family:'Segoe UI',Tahoma,sans-serif;}
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;}
+  html,body{margin:0;height:100%;width:100%;background:#000;overflow:hidden;touch-action:none;
+    position:fixed;top:0;left:0;}
   #app{position:relative;width:100%;height:100vh;height:100dvh;overflow:hidden;}
   #threeContainer{position:absolute;inset:0;touch-action:none;}
   #threeContainer canvas{display:block;width:100%;height:100%;}
@@ -1846,6 +1847,8 @@ function buildKitchen(){
     return {w:window.innerWidth, h:window.innerHeight};
   }
   function handleResize(){
+    window.scrollTo(0,0); // iOS can leave the page scrolled/bounced slightly even with overflow:hidden,
+                          // which reveals a black gap above the content and clips the bottom by the same amount.
     const {w,h} = getViewportSize();
     camera.aspect = w/h; camera.updateProjectionMatrix();
     renderer.setSize(w,h);
